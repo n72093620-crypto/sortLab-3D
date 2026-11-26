@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NeonSort: 3D Sorting Algorithm Lab</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+:root{color-scheme:dark;--bg:#05020f;--ink:#e8f6ff;--mut:#9b96c4;--c1:#00f0ff;--c2:#ff2bd6;--c3:#b6ff00;--ln:#2a1f55;--pn:#0d0820;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1100px 560px at 15% -10%,#2b0a55,transparent 60%),radial-gradient(900px 500px at 100% 0,#003845,transparent 55%),var(--bg);color:var(--ink);font:15px/1.5 "Trebuchet MS","Segoe UI",system-ui,sans-serif}
+header{padding:22px 20px 6px;max-width:1280px;margin:auto}
+h1{margin:0;font-size:clamp(28px,5vw,46px);letter-spacing:.04em;font-weight:800;color:var(--c1);text-shadow:0 0 8px var(--c1),0 0 28px #00f0ff88,3px 3px 0 #ff2bd655}
+header p{margin:4px 0 0;color:var(--mut);max-width:60ch}
+main,.wrap{max-width:1280px;margin:14px auto;padding:0 20px}
+main{display:grid;grid-template-columns:1fr 350px;gap:16px}
+.card{background:var(--pn);border:1px solid var(--ln);border-radius:14px;padding:14px;box-shadow:0 0 26px #00f0ff14}
+h2{margin:0 0 10px;font-size:16px;color:var(--c2);text-shadow:0 0 10px #ff2bd666}
+.stage{position:relative;height:580px;padding:0;overflow:hidden;border-color:#00f0ff66;box-shadow:0 0 30px #00f0ff30,inset 0 0 40px #ff2bd61a}
+#three{position:absolute;inset:0}
+#three canvas{display:block;touch-action:none;cursor:grab}
+.hud{position:absolute;left:12px;top:10px;right:12px;display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--mut);pointer-events:none}
+.hud b{color:var(--c3);font-size:16px;text-shadow:0 0 8px #b6ff0088}
+.hint{position:absolute;left:12px;bottom:8px;font-size:12px;color:var(--mut);pointer-events:none}
+.panel{display:flex;flex-direction:column;gap:12px}
+label{display:block;font-size:13px;color:var(--mut);margin:6px 0 3px}
+select,input[type=number],input[type=text]{width:100%;background:#120a2b;color:var(--ink);border:1px solid var(--ln);border-radius:8px;padding:8px;font:inherit}
+input[type=range]{width:100%;accent-color:var(--c2)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row>*{flex:1}
+.btn{background:transparent;color:var(--c1);border:1px solid var(--c1);border-radius:8px;padding:8px 12px;font:inherit;font-weight:700;cursor:pointer;box-shadow:0 0 10px #00f0ff44;min-width:70px}
+.btn:hover,.btn:focus-visible{background:#00f0ff22;box-shadow:0 0 18px #00f0ffaa;outline:none}
+.btn.m{color:var(--c2);border-color:var(--c2);box-shadow:0 0 10px #ff2bd644}
+.btn.m:hover,.btn.m:focus-visible{background:#ff2bd622;box-shadow:0 0 18px #ff2bd6aa}
+.chips{display:flex;flex-wrap:wrap;gap:5px;max-height:120px;overflow:auto;margin-top:8px}
+.chip{background:#1a0f3d;color:var(--ink);border:1px solid var(--ln);border-radius:6px;padding:2px 7px;font:12px monospace;cursor:pointer}
+.chip:hover{border-color:var(--c2);color:var(--c2);text-decoration:line-through}
+#msg{min-height:18px;font-size:12px;color:var(--c3)}
+.info{font-size:13px;color:var(--mut)}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+canvas.g{width:100%;height:260px;display:block}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--mut);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;box-shadow:0 0 6px currentColor}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--ln)}
+th{color:var(--c1)}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:#00f0ff12}
+tbody tr.on{background:#ff2bd622;box-shadow:inset 3px 0 var(--c2)}
+footer{text-align:center;color:var(--mut);font-size:12px;padding:10px 0 24px}
+@media(max-width:920px){main,.charts{grid-template-columns:1fr}.stage{height:430px}}
+@media(prefers-reduced-motion:reduce){.btn{transition:none}}
+</style></head><body>
+<header><h1>NeonSort</h1><p>Watch twelve sorting algorithms run in a glowing 3D arena. Add your own numbers, change the speed, and compare how many operations each one needs.</p></header>
+<main>
+<section class="card stage"><div id="three"></div><div class="hud" id="hud"></div><div class="hint">Drag to rotate. Scroll or pinch to zoom.</div></section>
+<aside class="panel">
+<div class="card">
+<h2>Simulator</h2>
+<label for="algo">Algorithm</label><select id="algo"></select>
+<p class="info" id="desc"></p>
+<div class="row"><button class="btn" id="play">Play</button><button class="btn" id="stepb">Step</button><button class="btn m" id="rst">Reset</button></div>
+<label for="speed">Speed</label><input type="range" id="speed" min="1" max="100" value="45">
+<label for="size">Array size: <span id="sz">24</span></label><input type="range" id="size" min="5" max="80" value="24">
+<div class="row"><select id="preset"><option value="random">Random</option><option value="reversed">Reversed</option><option value="nearly">Nearly sorted</option><option value="few">Few unique</option></select><button class="btn m" id="gen">Generate</button></div>
+<div class="row"><div><label for="layout">Layout</label><select id="layout"><option value="line">Line</option><option value="ring">Ring</option></select></div><div><label for="rot">Camera</label><select id="rot"><option value="1">Auto-rotate</option><option value="0">Manual</option></select></div></div>
+</div>
+<div class="card">
+<h2>Array</h2>
+<div class="row"><input type="number" id="val" min="1" max="99" placeholder="Value 1 to 99"><button class="btn" id="add">Add</button></div>
+<div class="row" style="margin-top:8px"><button class="btn m" id="addr">Add random</button><button class="btn m" id="pop">Remove last</button></div>
+<label for="list">Or set the whole array (comma separated)</label>
+<div class="row"><input type="text" id="list" placeholder="e.g. 42, 7, 88, 15"><button class="btn" id="setl">Set</button></div>
+<div id="msg" role="status"></div>
+<div class="chips" id="chips"></div>
+</div>
+</aside>
+</main>
+<div class="wrap charts">
+<section class="card"><h2>Live graph: operations as it runs</h2><canvas class="g" id="live"></canvas><div class="legend"><span><i style="color:#00f0ff;background:#00f0ff"></i>Comparisons</span><span><i style="color:#ff2bd6;background:#ff2bd6"></i>Writes and swaps</span></div></section>
+<section class="card"><h2>Benchmark: operations by input size</h2><div class="row" style="margin-bottom:6px"><button class="btn" id="bench">Run again</button><select id="scale"><option value="log">Log scale</option><option value="lin">Linear scale</option></select></div><canvas class="g" id="big"></canvas><div class="legend" id="legend"></div></section>
+</div>
+<div class="wrap"><section class="card"><h2>Complexity cheat sheet</h2><div class="tw"><table id="tbl"></table></div></section></div>
+<footer>Select a row in the table to load that algorithm.</footer>
+<script>
+const $=s=>document.querySelector(s);
+function*bubble(a){for(let i=0;i<a.length-1;i++){let sw=0;for(let j=0;j<a.length-1-i;j++){yield['c',j,j+1];if(a[j]>a[j+1]){[a[j],a[j+1]]=[a[j+1],a[j]];yield['w',j,j+1];sw=1}}if(!sw)return}}
+function*selection(a){const n=a.length;for(let i=0;i<n-1;i++){let m=i;for(let j=i+1;j<n;j++){yield['c',m,j];if(a[j]<a[m])m=j}if(m!=i){[a[i],a[m]]=[a[m],a[i]];yield['w',i,m]}}}
+function*insertion(a){for(let i=1;i<a.length;i++){let k=a[i],j=i-1;while(j>=0){yield['c',j,i];if(a[j]>k){a[j+1]=a[j];yield['w',j+1,j];j--}else break}a[j+1]=k;yield['w',j+1]}}
+function*merge(a,l=0,r=a.length-1){if(l>=r)return;const m=(l+r)>>1;yield*merge(a,l,m);yield*merge(a,m+1,r);const L=a.slice(l,m+1),R=a.slice(m+1,r+1);let i=0,j=0,k=l;while(i<L.length&&j<R.length){yield['c',l+i,m+1+j];a[k]=L[i]<=R[j]?L[i++]:R[j++];yield['w',k++]}while(i<L.length){a[k]=L[i++];yield['w',k++]}while(j<R.length){a[k]=R[j++];yield['w',k++]}}
+function*quick(a,lo=0,hi=a.length-1){if(lo>=hi)return;const p=a[hi];let i=lo;for(let j=lo;j<hi;j++){yield['c',j,hi];if(a[j]<p){[a[i],a[j]]=[a[j],a[i]];yield['w',i,j];i++}}[a[i],a[hi]]=[a[hi],a[i]];yield['w',i,hi];yield*quick(a,lo,i-1);yield*quick(a,i+1,hi)}
+function*heap(a){const n=a.length;function*sift(i,e){while(true){let l=2*i+1,r=l+1,m=i;if(l<e){yield['c',l,m];if(a[l]>a[m])m=l}if(r<e){yield['c',r,m];if(a[r]>a[m])m=r}if(m==i)return;[a[i],a[m]]=[a[m],a[i]];yield['w',i,m];i=m}}for(let i=(n>>1)-1;i>=0;i--)yield*sift(i,n);for(let e=n-1;e>0;e--){[a[0],a[e]]=[a[e],a[0]];yield['w',0,e];yield*sift(0,e)}}
+function*shell(a){for(let g=a.length>>1;g>0;g>>=1)for(let i=g;i<a.length;i++){let t=a[i],j=i;while(j>=g){yield['c',j-g,i];if(a[j-g]>t){a[j]=a[j-g];yield['w',j,j-g];j-=g}else break}a[j]=t;yield['w',j]}}
+function*counting(a){const mx=Math.max(...a),c=Array(mx+1).fill(0);for(const v of a)c[v]++;let k=0;for(let v=0;v<=mx;v++)while(c[v]-->0){a[k]=v;yield['w',k++]}}
+function*radix(a){const mx=Math.max(...a);for(let e=1;Math.floor(mx/e)>0;e*=10){const b=Array.from({length:10},()=>[]);for(let i=0;i<a.length;i++){yield['c',i];b[Math.floor(a[i]/e)%10].push(a[i])}let k=0;for(const x of b)for(const v of x){a[k]=v;yield['w',k++]}}}
+function*cocktail(a){let s=0,e=a.length-1,sw=1;while(sw){sw=0;for(let i=s;i<e;i++){yield['c',i,i+1];if(a[i]>a[i+1]){[a[i],a[i+1]]=[a[i+1],a[i]];yield['w',i,i+1];sw=1}}e--;if(!sw)break;sw=0;for(let i=e;i>s;i--){yield['c',i-1,i];if(a[i-1]>a[i]){[a[i-1],a[i]]=[a[i],a[i-1]];yield['w',i-1,i];sw=1}}s++}}
+function*comb(a){let g=a.length,sw=1;while(g>1||sw){g=Math.max(1,Math.floor(g/1.3));sw=0;for(let i=0;i+g<a.length;i++){yield['c',i,i+g];if(a[i]>a[i+g]){[a[i],a[i+g]]=[a[i+g],a[i]];yield['w',i,i+g];sw=1}}}}
+function*gnome(a){let i=0;while(i<a.length){if(i==0){i++;continue}yield['c',i-1,i];if(a[i-1]<=a[i])i++;else{[a[i-1],a[i]]=[a[i],a[i-1]];yield['w',i-1,i];i--}}}
+const ALG=[
+['bubble','Bubble sort','n','n²','n²','1','Yes','Swaps neighbours that are out of order, so the largest value floats to the end on every pass.',bubble],
+['selection','Selection sort','n²','n²','n²','1','No','Finds the smallest unsorted value and moves it to the front.',selection],
+['insertion','Insertion sort','n','n²','n²','1','Yes','Grows a sorted prefix by sliding each new value into its place.',insertion],
+['merge','Merge sort','n log n','n log n','n log n','n','Yes','Splits the array in halves, sorts each half, then merges them.',merge],
+['quick','Quick sort','n log n','n log n','n²','log n','No','Partitions around a pivot, then sorts both sides recursively.',quick],
+['heap','Heap sort','n log n','n log n','n log n','1','No','Builds a max-heap, then repeatedly moves the root to the end.',heap],
+['shell','Shell sort','n log n','~n^1.3','n²','1','No','Insertion sort over shrinking gaps, so distant values travel fast.',shell],
+['counting','Counting sort','n + k','n + k','n + k','k','Yes','Counts each value and rebuilds the array with no comparisons.',counting],
+['radix','Radix sort','nk','nk','nk','n + k','Yes','Sorts digit by digit (base 10) using buckets.',radix],
+['cocktail','Cocktail shaker sort','n','n²','n²','1','Yes','Bubble sort that alternates forward and backward passes.',cocktail],
+['comb','Comb sort','n log n','n²/2^p','n²','1','No','Bubble sort with a gap that shrinks by 1.3 each round.',comb],
+['gnome','Gnome sort','n','n²','n²','1','Yes','Steps forward when in order, otherwise swaps and steps back.',gnome]];
+const IDX={};ALG.forEach((a,i)=>IDX[a[0]]=i);
+let cur='bubble',A=[],work=[],gen=null,play=false,done=false,sweep=0,acc=0,st={c:0,w:0,s:0},hist=[],hl={};
+function mk(n,t){const r=()=>1+Math.floor(Math.random()*99);let a=Array.from({length:n},r);
+ if(t=='reversed')a=Array.from({length:n},(_,i)=>Math.max(1,Math.round(99*(n-i)/n)));
+ if(t=='nearly'){a=Array.from({length:n},(_,i)=>Math.max(1,Math.round(99*(i+1)/n)));for(let k=0;k<Math.max(1,n/10);k++){const i=Math.floor(Math.random()*n),j=Math.floor(Math.random()*n);[a[i],a[j]]=[a[j],a[i]]}}
+ if(t=='few')a=Array.from({length:n},()=>[20,50,80][Math.floor(Math.random()*3)]);return a}
+function reset(){work=A.slice();gen=null;play=false;done=false;sweep=0;acc=0;st={c:0,w:0,s:0};hist=[];hl={};ui()}
+function step(){if(!gen)gen=ALG[IDX[cur]][8](work);const r=gen.next();if(r.done){done=true;play=false;hl={};ui();return false}
+ const[t,i,j]=r.value;t=='c'?st.c++:st.w++;st.s++;hl={};hl[i]=t;if(j!=null)hl[j]=t;hist.push([st.c,st.w]);return true}
+function msg(t){$('#msg').textContent=t;clearTimeout(msg.t);msg.t=setTimeout(()=>$('#msg').textContent='',2600)}
+function add(v){v=Math.round(v);if(!(v>=1&&v<=99))return msg('Enter a whole number from 1 to 99.');if(A.length>=120)return msg('The array holds at most 120 elements.');A.push(v);reset()}
+function ui(){$('#algo').value=cur;$('#desc').textContent=ALG[IDX[cur]][7]+' Average case: '+ALG[IDX[cur]][3]+'.';$('#play').textContent=play?'Pause':'Play';
+ $('#sz').textContent=A.length;$('#size').value=Math.min(80,A.length);
+ $('#chips').innerHTML=A.map((v,i)=>`<button class="chip" data-i="${i}" title="Remove">${v}</button>`).join('')||'<span class="info">The array is empty. Add a number to start.</span>';
+ document.querySelectorAll('#tbl tbody tr').forEach(r=>r.classList.toggle('on',r.dataset.k==cur))}
+// UI wiring
+$('#algo').innerHTML=ALG.map(a=>`<option value="${a[0]}">${a[1]}</option>`).join('');
+$('#tbl').innerHTML='<thead><tr><th>Algorithm</th><th>Best</th><th>Average</th><th>Worst</th><th>Space</th><th>Stable</th></tr></thead><tbody>'+ALG.map(a=>`<tr data-k="${a[0]}"><td>${a[1]}</td><td>${a[2]}</td><td>${a[3]}</td><td>${a[4]}</td><td>${a[5]}</td><td>${a[6]}</td></tr>`).join('')+'</tbody>';
+$('#tbl').onclick=e=>{const r=e.target.closest('tr');if(r&&r.dataset.k){cur=r.dataset.k;reset();scrollTo({top:0,behavior:'smooth'})}};
+$('#algo').onchange=e=>{cur=e.target.value;reset()};
+$('#play').onclick=()=>{if(A.length<2)return msg('Add at least two numbers first.');if(done)reset();play=!play;ui()};
+$('#stepb').onclick=()=>{if(A.length<2)return;if(done)reset();play=false;step();ui()};
+$('#rst').onclick=reset;
+$('#size').oninput=e=>{A=mk(+e.target.value,$('#preset').value);reset()};
+$('#gen').onclick=()=>{A=mk(Math.max(5,A.length||24),$('#preset').value);reset()};
+$('#add').onclick=()=>{add(+$('#val').value);$('#val').value='';$('#val').focus()};
+$('#val').onkeydown=e=>{if(e.key=='Enter')$('#add').click()};
+$('#addr').onclick=()=>add(1+Math.random()*98);
+$('#pop').onclick=()=>{A.pop();reset()};
+$('#setl').onclick=()=>{const v=$('#list').value.split(/[\s,;]+/).map(Number).filter(x=>x>=1&&x<=99).map(Math.round).slice(0,120);if(!v.length)return msg('Enter numbers from 1 to 99, separated by commas.');A=v;reset()};
+$('#chips').onclick=e=>{const b=e.target.closest('.chip');if(b){A.splice(+b.dataset.i,1);reset()}};
+$('#scale').onchange=()=>drawBig();
+// 3D scene
+const host=$('#three');let R,S,C,bars=[],BG,EG,th=.6,ph=.42,dist=36,drag=null;
+try{
+R=new THREE.WebGLRenderer({antialias:true,alpha:true});R.setPixelRatio(Math.min(devicePixelRatio,2));host.appendChild(R.domElement);
+S=new THREE.Scene();S.fog=new THREE.FogExp2(0x05020f,.011);C=new THREE.PerspectiveCamera(50,1,.1,500);
+BG=new THREE.BoxGeometry(1,1,1);BG.translate(0,.5,0);EG=new THREE.EdgesGeometry(BG);
+const grid=new THREE.GridHelper(80,40,0xff2bd6,0x3b1a74);S.add(grid);
+const ring=new THREE.Mesh(new THREE.RingGeometry(38,38.4,96),new THREE.MeshBasicMaterial({color:0x00f0ff,side:2}));ring.rotation.x=-Math.PI/2;ring.position.y=.02;S.add(ring);
+const sp=new Float32Array(900);for(let i=0;i<900;i++)sp[i]=(Math.random()-.5)*160;sp.forEach((v,i)=>{if(i%3==1)sp[i]=Math.random()*60+4});
+const sg=new THREE.BufferGeometry();sg.setAttribute('position',new THREE.BufferAttribute(sp,3));S.add(new THREE.Points(sg,new THREE.PointsMaterial({color:0x9fe9ff,size:.5,transparent:true,opacity:.7})));
+const el=R.domElement;
+el.addEventListener('pointerdown',e=>{drag=[e.clientX,e.clientY];el.setPointerCapture(e.pointerId);el.style.cursor='grabbing'});
+el.addEventListener('pointerup',()=>{drag=null;el.style.cursor='grab'});
+el.addEventListener('pointermove',e=>{if(!drag)return;th-=(e.clientX-drag[0])*.008;ph=Math.max(.05,Math.min(1.4,ph+(e.clientY-drag[1])*.006));drag=[e.clientX,e.clientY]});
+el.addEventListener('wheel',e=>{e.preventDefault();dist=Math.max(14,Math.min(90,dist+e.deltaY*.03))},{passive:false});
+}catch(err){host.innerHTML='<p style="padding:20px;color:#ff2bd6">3D view needs WebGL, which is not available in this browser. The simulator, graphs and table still work.</p>'}
+function rs(){if(!R)return;const w=host.clientWidth,h=host.clientHeight;R.setSize(w,h);C.aspect=w/h;C.updateProjectionMatrix()}
+addEventListener('resize',rs);if(window.ResizeObserver)new ResizeObserver(rs).observe(host);rs();
+function build(){bars.forEach(b=>S.remove(b.g));bars=[];for(let i=0;i<work.length;i++){const g=new THREE.Group(),m=new THREE.Mesh(BG,new THREE.MeshBasicMaterial({transparent:true,opacity:.5})),e=new THREE.LineSegments(EG,new THREE.LineBasicMaterial());g.add(m,e);S.add(g);bars.push({g,m,e})}}
+let col;
+function frame(){requestAnimationFrame(frame);
+ if(play){acc+=Math.max(.1,Math.pow(+$('#speed').value,2)/400);while(acc>=1&&play){acc--;step()}if(!play)ui()}
+ if(done&&sweep<work.length)sweep+=Math.max(.5,work.length/70);
+ const n=work.length;
+ $('#hud').innerHTML=`<span>Comparisons <b>${st.c}</b></span><span>Writes / swaps <b>${st.w}</b></span><span>Steps <b>${st.s}</b></span><span><b>${done?'Sorted':play?'Running':'Ready'}</b></span>`;
+ if(!R)return;
+ if(bars.length!=n)build();col=col||new THREE.Color();
+ const ringL=$('#layout').value=='ring',rr=Math.max(8,n*.3);
+ for(let i=0;i<n;i++){const b=bars[i],v=work[i],h=Math.max(.4,v/100*20);let w,x,z,ry=0;
+  if(ringL){const an=i/n*Math.PI*2;w=Math.min(2.4,2*Math.PI*rr/n*.75);x=Math.cos(an)*rr;z=Math.sin(an)*rr;ry=-an}else{const s=34/n;w=s*.75;x=(i-(n-1)/2)*s;z=0}
+  b.g.position.set(x,0,z);b.g.rotation.y=ry;b.g.scale.set(w,h,Math.min(w,2.4));
+  let c;if(hl[i]=='c')c=0xfff200;else if(hl[i]=='w')c=0xff3355;else if(done&&i<sweep)c=0x39ff14;else{col.setHSL((190+v/100*130)/360,1,.55);c=col.getHex()}
+  b.m.material.color.setHex(c);b.e.material.color.setHex(c);b.m.material.opacity=hl[i]?.9:.5}
+ if($('#rot').value=='1'&&!drag)th+=.0025;
+ const T=ringL?4:5;C.position.set(dist*Math.sin(th)*Math.cos(ph),T+dist*Math.sin(ph),dist*Math.cos(th)*Math.cos(ph));C.lookAt(0,T,0);R.render(S,C);
+ if(frame.k++%4==0)drawLive()}
+frame.k=0;
+// graphs
+function fit(c){const d=devicePixelRatio||1,w=c.clientWidth,h=c.clientHeight;if(c.width!=w*d||c.height!=h*d){c.width=w*d;c.height=h*d}const x=c.getContext('2d');x.setTransform(d,0,0,d,0,0);x.clearRect(0,0,w,h);return[x,w,h]}
+function axes(x,w,h,p,xl,yl,ym){x.strokeStyle='#2a1f55';x.fillStyle='#9b96c4';x.font='11px sans-serif';x.lineWidth=1;
+ for(let i=0;i<=4;i++){const y=p.t+(h-p.t-p.b)*i/4;x.beginPath();x.moveTo(p.l,y);x.lineTo(w-p.r,y);x.stroke();x.textAlign='right';x.fillText(ym(1-i/4),p.l-5,y+4)}
+ x.textAlign='center';x.fillText(xl,(w+p.l)/2,h-4);x.save();x.translate(11,h/2);x.rotate(-Math.PI/2);x.fillText(yl,0,0);x.restore()}
+function line(x,pts,color){x.strokeStyle=color;x.shadowColor=color;x.shadowBlur=8;x.lineWidth=2;x.beginPath();pts.forEach((p,i)=>i?x.lineTo(p[0],p[1]):x.moveTo(p[0],p[1]));x.stroke();x.shadowBlur=0}
+function drawLive(){const[x,w,h]=fit($('#live')),p={l:46,r:12,t:10,b:24},N=hist.length,mx=Math.max(10,N?Math.max(hist[N-1][0],hist[N-1][1]):10);
+ axes(x,w,h,p,'Steps (total '+Math.max(N,1)+')','Operations',f=>Math.round(f*mx));
+ if(N<2)return;const k=Math.ceil(N/300);
+ for(const [j,c] of [[0,'#00f0ff'],[1,'#ff2bd6']]){const pts=[];for(let i=0;i<N;i+=k)pts.push([p.l+(w-p.l-p.r)*i/(N-1),h-p.b-(h-p.t-p.b)*hist[i][j]/mx]);pts.push([w-p.r,h-p.b-(h-p.t-p.b)*hist[N-1][j]/mx]);line(x,pts,c)}}
+let BD=null;const SZ=[10,20,30,40,50,60,70,80,90,100];
+function bench(){BD=ALG.map(a=>SZ.map(n=>{const arr=Array.from({length:n},()=>1+Math.floor(Math.random()*99));let c=0;for(const _ of a[8](arr))c++;return Math.max(1,c)}));drawBig()}
+function drawBig(){if(!BD)return;const[x,w,h]=fit($('#big')),p={l:50,r:12,t:10,b:24},log=$('#scale').value=='log',mx=Math.max(...BD.flat()),lo=Math.log10(5),hi=Math.log10(mx*1.1);
+ const Y=v=>log?(Math.log10(v)-lo)/(hi-lo):v/mx;
+ axes(x,w,h,p,'Input size (elements)','Operations',f=>log?Math.round(Math.pow(10,lo+f*(hi-lo))):Math.round(f*mx));
+ BD.forEach((d,i)=>{const c=`hsl(${i*30},100%,60%)`;line(x,d.map((v,j)=>[p.l+(w-p.l-p.r)*j/(SZ.length-1),h-p.b-(h-p.t-p.b)*Math.max(0,Y(v))]),c)});
+ $('#legend').innerHTML=ALG.map((a,i)=>`<span><i style="color:hsl(${i*30},100%,60%);background:hsl(${i*30},100%,60%)"></i>${a[1].replace(' sort','')}</span>`).join('')}
+$('#bench').onclick=bench;addEventListener('resize',drawBig);
+A=mk(24,'random');reset();bench();frame();
+</script></body></html>
